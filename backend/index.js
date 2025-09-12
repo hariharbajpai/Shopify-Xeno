@@ -184,69 +184,74 @@ app.use((_req, res) => res.status(404).json({ message: 'not found' }));
 // Use centralized error handler
 app.use(errorHandler);
 
-// Start server with database connection test
-async function startServer() {
-  try {
-    // Test database connection first
-    await testDatabaseConnection();
+// Export the app for Vercel
+export default app;
 
-    // Start the server
-    app.listen(env.PORT, () => {
-      console.log('API server started successfully!');
-      console.log(`Server running on: http://localhost:${env.PORT}`);
-      console.log(`Environment: ${env.NODE_ENV}`);
-      console.log(`Health check: http://localhost:${env.PORT}/health`);
-      console.log('Ready to accept requests!');
-
-      // Start cron scheduler after server is running
-      startCronScheduler();
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
-  }
-}
-
-// Cron scheduler for delta sync
-function startCronScheduler() {
-  const cronInterval = process.env.CRON_SYNC_EVERY_MINUTES || '15';
-  const cronPattern = `*/${cronInterval} * * * *`; // Every N minutes
-
-  console.log(`Starting cron scheduler: every ${cronInterval} minutes`);
-
-  cron.schedule(cronPattern, async () => {
-    console.log(`[${new Date().toISOString()}] Running scheduled delta sync...`);
-
+// Only start the server if this file is run directly (not on Vercel)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  async function startServer() {
     try {
-      const activeTenants = await prisma.tenant.findMany({
-        where: { status: 'active' },
-        select: {
-          id: true,
-          shopDomain: true,
-          accessToken: true,
-          tenantId: true
-        }
+      // Test database connection first
+      await testDatabaseConnection();
+
+      // Start the server
+      app.listen(env.PORT, () => {
+        console.log('API server started successfully!');
+        console.log(`Server running on: http://localhost:${env.PORT}`);
+        console.log(`Environment: ${env.NODE_ENV}`);
+        console.log(`Health check: http://localhost:${env.PORT}/health`);
+        console.log('Ready to accept requests!');
+
+        // Start cron scheduler after server is running
+        startCronScheduler();
       });
-
-      console.log(`Found ${activeTenants.length} active tenants for delta sync`);
-
-      for (const tenant of activeTenants) {
-        try {
-          const result = await deltaSync(tenant);
-          console.log(`Delta sync completed for ${tenant.shopDomain}:`, result);
-        } catch (tenantError) {
-          console.error(`Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
-        }
-      }
-
-      console.log(`Scheduled delta sync completed at ${new Date().toISOString()}`);
     } catch (error) {
-      console.error('Cron scheduler error:', error.message);
+      console.error('Failed to start server:', error.message);
+      process.exit(1);
     }
-  });
+  }
 
-  console.log('Cron scheduler started successfully');
+  // Cron scheduler for delta sync
+  function startCronScheduler() {
+    const cronInterval = process.env.CRON_SYNC_EVERY_MINUTES || '15';
+    const cronPattern = `*/${cronInterval} * * * *`; // Every N minutes
+
+    console.log(`Starting cron scheduler: every ${cronInterval} minutes`);
+
+    cron.schedule(cronPattern, async () => {
+      console.log(`[${new Date().toISOString()}] Running scheduled delta sync...`);
+
+      try {
+        const activeTenants = await prisma.tenant.findMany({
+          where: { status: 'active' },
+          select: {
+            id: true,
+            shopDomain: true,
+            accessToken: true,
+            tenantId: true
+          }
+        });
+
+        console.log(`Found ${activeTenants.length} active tenants for delta sync`);
+
+        for (const tenant of activeTenants) {
+          try {
+            const result = await deltaSync(tenant);
+            console.log(`Delta sync completed for ${tenant.shopDomain}:`, result);
+          } catch (tenantError) {
+            console.error(`Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
+          }
+        }
+
+        console.log(`Scheduled delta sync completed at ${new Date().toISOString()}`);
+      } catch (error) {
+        console.error('Cron scheduler error:', error.message);
+      }
+    });
+
+    console.log('Cron scheduler started successfully');
+  }
+
+  // Start the application
+  startServer();
 }
-
-// Start the application
-startServer();
