@@ -19,42 +19,47 @@ import { initRedis } from './config/redis.js';
 
 const app = express();
 
-async function testDatabaseConnection() {
+// Initialize database connection and Redis (but don't start cron in serverless)
+async function initializeApp() {
   try {
     await prisma.$connect();
     console.log('Database connected successfully');
-
     await prisma.$queryRaw`SELECT 1`;
     console.log('Database test query passed');
-
     initRedis();
   } catch (error) {
-    console.error('Database connection failed:', error.message);
-    process.exit(1);
+    console.error('App initialization failed:', error.message);
   }
 }
 
-process.on('SIGINT', async () => {
-  console.log('\nShutting down...');
-  try {
-    await prisma.$disconnect();
-    console.log('Database disconnected');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during shutdown:', error.message);
-    process.exit(1);
-  }
-});
+// Only initialize once
+if (process.env.NOW_REGION || process.env.VERCEL_REGION) {
+  // In Vercel environment, initialize without cron
+  initializeApp().catch(console.error);
+} else {
+  // In development/production environment, initialize with full setup
+  process.on('SIGINT', async () => {
+    console.log('\nShutting down...');
+    try {
+      await prisma.$disconnect();
+      console.log('Database disconnected');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error.message);
+      process.exit(1);
+    }
+  });
 
-process.on('SIGTERM', async () => {
-  console.log('\nReceived SIGTERM, shutting down...');
-  try {
-    await prisma.$disconnect();
-    process.exit(0);
-  } catch (error) {
-    process.exit(1);
-  }
-});
+  process.on('SIGTERM', async () => {
+    console.log('\nReceived SIGTERM, shutting down...');
+    try {
+      await prisma.$disconnect();
+      process.exit(0);
+    } catch (error) {
+      process.exit(1);
+    }
+  });
+}
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -188,11 +193,11 @@ app.use(errorHandler);
 export default app;
 
 // Only start the server if this file is run directly (not on Vercel)
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (!(process.env.NOW_REGION || process.env.VERCEL_REGION) && import.meta.url === `file://${process.argv[1]}`) {
   async function startServer() {
     try {
       // Test database connection first
-      await testDatabaseConnection();
+      await initializeApp();
 
       // Start the server
       app.listen(env.PORT, () => {
