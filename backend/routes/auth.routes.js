@@ -6,6 +6,7 @@ import {
   getCurrentUser, 
   logout 
 } from '../controllers/auth.controller.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.get('/google/callback',
 
 // Auth Status Routes
 router.get('/user', getCurrentUser);
+router.get('/current', authenticateToken, getCurrentUser); // JWT-protected endpoint
 router.post('/logout', logout);
 router.get('/failure', googleAuthFailure);
 

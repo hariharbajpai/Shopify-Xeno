@@ -1,5 +1,6 @@
 // config/shopify.js
 import crypto from 'crypto';
+import { env } from '../utils/env.js';
 
 // ---- helpers to read env lazily (avoid crashing at import time) ----
 function getEnv(k, { required = true } = {}) {
@@ -9,7 +10,7 @@ function getEnv(k, { required = true } = {}) {
 }
 
 function apiVersion() {
-  return process.env.SHOPIFY_API_VERSION || '2024-10';
+  return env.SHOPIFY_API_VERSION || '2024-10';
 }
 
 // ---- 1) OAuth: build install URL for a store ----
@@ -17,9 +18,9 @@ export function buildInstallUrl(shop) {
   if (!shop || !/\.myshopify\.com$/.test(shop)) {
     throw new Error('Invalid shop domain');
   }
-  const clientId = getEnv('SHOPIFY_API_KEY');
-  const scopes = getEnv('SHOPIFY_SCOPES');
-  const redirectUri = getEnv('SHOPIFY_REDIRECT_URI');
+  const clientId = env.SHOPIFY_API_KEY;
+  const scopes = env.SHOPIFY_SCOPES;
+  const redirectUri = env.SHOPIFY_REDIRECT_URI;
 
   const nonce = crypto.randomBytes(16).toString('hex');
   const params = new URLSearchParams({
@@ -48,7 +49,7 @@ export function verifyOAuthCallbackHmac(queryObj) {
     .map((k) => `${k}=${Array.isArray(rest[k]) ? rest[k].join(',') : rest[k]}`)
     .join('&');
 
-  const secret = getEnv('SHOPIFY_API_SECRET');
+  const secret = env.SHOPIFY_API_SECRET;
   const digest = crypto
     .createHmac('sha256', secret)
     .update(message, 'utf8')
@@ -60,8 +61,8 @@ export function verifyOAuthCallbackHmac(queryObj) {
 
 // ---- 3) OAuth: exchange code for permanent access token ----
 export async function exchangeCodeForToken(shop, code) {
-  const clientId = getEnv('SHOPIFY_API_KEY');
-  const clientSecret = getEnv('SHOPIFY_API_SECRET');
+  const clientId = env.SHOPIFY_API_KEY;
+  const clientSecret = env.SHOPIFY_API_SECRET;
 
   const url = `https://${shop}/admin/oauth/access_token`;
   const res = await fetch(url, {
@@ -87,7 +88,7 @@ export async function exchangeCodeForToken(shop, code) {
 // ---- 4) Webhook: verify X-Shopify-Hmac-Sha256 header on raw body ----
 export function verifyWebhookHmac(rawBodyBuffer, headerHmac) {
   if (!headerHmac) return false;
-  const secret = getEnv('SHOPIFY_API_SECRET');
+  const secret = env.SHOPIFY_API_SECRET;
   const digest = crypto
     .createHmac('sha256', secret)
     .update(rawBodyBuffer)
@@ -181,7 +182,7 @@ export function buildShopifyClient({ shop, accessToken }) {
 // ---- 6) Webhook registration helper ----
 export async function registerWebhooks({ shop, accessToken, topics = [] }) {
   const client = buildShopifyClient({ shop, accessToken });
-  const callbackBase = getEnv('SHOPIFY_WEBHOOK_URI');
+  const callbackBase = env.SHOPIFY_WEBHOOK_URI;
 
   const results = [];
   for (const topic of topics) {
@@ -204,29 +205,4 @@ export async function registerWebhooks({ shop, accessToken, topics = [] }) {
   return results;
 }
 
-/*
-USAGE QUICK NOTES:
-
-// Begin install:
-const { url, state } = buildInstallUrl('7qnwxj-p4.myshopify.com'); // save `state` in session, redirect to `url`
-
-// In callback controller:
-if (!verifyOAuthCallbackHmac(req.query)) throw new Error('Bad HMAC');
-if (req.query.state !== req.session.state) throw new Error('Bad state');
-const { access_token } = await exchangeCodeForToken(req.query.shop, req.query.code);
-// save access_token against Tenant(shopDomain)
-
-// Build a client for a tenant:
-const client = buildShopifyClient({ shop: tenant.shopDomain, accessToken: tenant.accessToken });
-const products = await client.get('/products.json', { query: { limit: 50 } });
-
-// Verify webhook in route (raw body needed):
-const isValid = verifyWebhookHmac(req.rawBody, req.get('X-Shopify-Hmac-Sha256'));
-
-// Register webhooks after install:
-await registerWebhooks({
-  shop: tenant.shopDomain,
-  accessToken: tenant.accessToken,
-  topics: ['orders/create', 'customers/create', 'products/update', 'app/uninstalled'],
-});
-*/
+ 

@@ -3,10 +3,15 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import session from 'express-session';
+import helmet from 'helmet';
+import path from 'path';
 import { env } from './utils/env.js';
 import authRoutes from './routes/auth.routes.js';
+import shopifyRoutes from './routes/shopify.routes.js';
 import { prisma } from './models/db.js';
 import passport from './config/passport.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -51,7 +56,41 @@ process.on('SIGTERM', async () => {
   }
 });
 
-app.use(cors({ origin: env.CORS_ORIGINS.length ? env.CORS_ORIGINS : true, credentials: true }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+app.use(cors({ 
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow specific origins from env
+    if (env.CORS_ORIGINS.length && env.CORS_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // In development, allow localhost and file:// origins
+    if (env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'null') {
+        return callback(null, true);
+      }
+    }
+    
+    // Default: allow all if no specific origins set
+    if (!env.CORS_ORIGINS.length) return callback(null, true);
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true 
+}));
+app.use(apiLimiter);
 app.use(express.json());
 app.use(session({
   secret: env.SESSION_SECRET,
@@ -68,6 +107,12 @@ app.use(passport.session());
 app.use(morgan('dev'));
 
 app.use('/auth', authRoutes);
+app.use('/', shopifyRoutes);
+
+// Serve test HTML file for OAuth testing
+app.get('/test', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'test-oauth.html'));
+});
 
 // health endpoint with database status
 app.get('/health', async (_req, res) => {
@@ -93,50 +138,8 @@ app.get('/health', async (_req, res) => {
 // 404
 app.use((_req, res) => res.status(404).json({ message: 'not found' }));
 
-// Enhanced error handler
-app.use((err, req, res, _next) => {
-  console.error('❌ Error occurred:');
-  console.error('URL:', req.method, req.url);
-  console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
-  
-  // Database-specific error handling
-  if (err.code === 'P2002') {
-    return res.status(409).json({ 
-      message: 'duplicate entry', 
-      field: err.meta?.target 
-    });
-  }
-  
-  if (err.code === 'P2025') {
-    return res.status(404).json({ 
-      message: 'record not found' 
-    });
-  }
-  
-  // JWT-specific error handling
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({ message: 'invalid token' });
-  }
-  
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({ message: 'token expired' });
-  }
-  
-  // Validation errors
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({ 
-      message: 'validation error', 
-      details: err.message 
-    });
-  }
-  
-  // Default error response
-  res.status(err.status || 500).json({ 
-    message: env.NODE_ENV === 'development' ? err.message : 'internal server error',
-    ...(env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Use centralized error handler
+app.use(errorHandler);
 
 // Start server with database connection test
 async function startServer() {
