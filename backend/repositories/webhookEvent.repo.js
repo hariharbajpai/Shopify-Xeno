@@ -7,7 +7,7 @@ export async function logWebhookEvent(tenantId, topic, shopDomain, payload) {
       topic,
       shopDomain,
       payload,
-      receivedAt: new Date(), // Use the correct field name from schema
+      receivedAt: new Date(),
     },
   });
 }

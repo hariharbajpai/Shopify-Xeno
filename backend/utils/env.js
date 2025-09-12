@@ -26,6 +26,9 @@ export const env = {
   SHOPIFY_WEBHOOK_URI: process.env.SHOPIFY_WEBHOOK_URI || 'http://localhost:4000/webhooks/shopify',
   SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
   SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION || '2024-10',
+  // Dev Store Configuration
+  DEV_SHOP_DOMAIN: process.env.DEV_SHOP_DOMAIN,
+  DEV_ADMIN_TOKEN: process.env.DEV_ADMIN_TOKEN,
   // JWT Configuration
   JWT_SECRET: process.env.JWT_SECRET || process.env.SESSION_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || process.env.SESSION_SECRET + '_refresh',

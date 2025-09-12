@@ -55,10 +55,13 @@ export const shopifyCallback = async (req, res, next) => {
       const webhookTopics = [
         'orders/create',
         'orders/updated', 
+        'orders/fulfilled',
+        'orders/cancelled',
         'customers/create',
-        'customers/updated',
+        'customers/update',
         'products/create',
-        'products/updated',
+        'products/update',
+        'products/delete',
         'app/uninstalled'
       ];
       
@@ -68,9 +71,9 @@ export const shopifyCallback = async (req, res, next) => {
         topics: webhookTopics
       });
       
-      console.log(`📥 Registered ${webhookResults.filter(r => r.ok).length}/${webhookResults.length} webhooks for ${shop}`);
+      console.log(`Registered ${webhookResults.filter(r => r.ok).length}/${webhookResults.length} webhooks for ${shop}`);
     } catch (webhookError) {
-      console.error('⚠️ Webhook registration failed:', webhookError.message);
+      console.error('Webhook registration failed:', webhookError.message);
       // Continue with install even if webhooks fail
     }
 

@@ -33,7 +33,6 @@ export function buildInstallUrl(shop) {
   };
 }
 
-// ---- 2) OAuth: verify HMAC on callback query ----
 export function verifyOAuthCallbackHmac(queryObj) {
   const hmac = queryObj.hmac;
   if (!hmac) return false;
@@ -92,7 +91,6 @@ export function verifyWebhookHmac(rawBodyBuffer, headerHmac) {
   }
 }
 
-// ---- 5) Per-tenant Shopify REST client ----
 export function buildShopifyClient({ shop, accessToken }) {
   if (!shop || !accessToken) throw new Error('shop and accessToken are required');
 
@@ -120,14 +118,11 @@ export function buildShopifyClient({ shop, accessToken }) {
     }
 
     const data = await res.json().catch(() => ({}));
-    // Return data + pagination links if any
     return { data, link: res.headers.get('link') || null };
   }
 
-  // Simple cursor pagination (rel="next" header)
   function parseNextLink(linkHeader) {
     if (!linkHeader) return null;
-    // Link: <https://shop.myshopify.com/.../orders.json?page_info=xxxx&limit=250>; rel="next"
     const parts = linkHeader.split(',');
     for (const p of parts) {
       const [urlPart, relPart] = p.split(';').map((s) => s.trim());
@@ -170,14 +165,12 @@ export function buildShopifyClient({ shop, accessToken }) {
   };
 }
 
-// ---- 6) Webhook registration helper ----
 export async function registerWebhooks({ shop, accessToken, topics = [] }) {
   const client = buildShopifyClient({ shop, accessToken });
   const callbackBase = env.SHOPIFY_WEBHOOK_URI;
 
   const results = [];
   for (const topic of topics) {
-    // Each topic posts to the same endpoint; route by topic in your controller
     const body = {
       webhook: {
         topic,

@@ -18,7 +18,8 @@ export async function handleWebhook(topic, shopDomain, payload) {
 
   switch (topic) {
     case 'products/create':
-    case 'products/updated': {
+    case 'products/update':
+    case 'products/delete': {
       // Fetch fresh product (ensure completeness)
       const pid = payload.id;
       const res = await client.get(`/products/${pid}.json`);
@@ -32,7 +33,7 @@ export async function handleWebhook(topic, shopDomain, payload) {
       break;
     }
     case 'customers/create':
-    case 'customers/updated': {
+    case 'customers/update': {
       const cid = payload.id;
       const res = await client.get(`/customers/${cid}.json`);
       await upsertCustomers(tenant.id, [res.data.customer ?? payload]);
@@ -45,7 +46,9 @@ export async function handleWebhook(topic, shopDomain, payload) {
       break;
     }
     case 'orders/create':
-    case 'orders/updated': {
+    case 'orders/updated':
+    case 'orders/fulfilled':
+    case 'orders/cancelled': {
       const oid = payload.id;
       const res = await client.get(`/orders/${oid}.json`, { query: { fields: 'id,name,currency,financial_status,fulfillment_status,total_price,subtotal_price,total_tax,total_discounts,processed_at,customer,line_items' } });
       await upsertOrdersWithItems(tenant.id, [res.data.order ?? payload]);
@@ -61,7 +64,7 @@ export async function handleWebhook(topic, shopDomain, payload) {
     case 'app/uninstalled': {
       // Mark tenant as suspended to stop processing
       await markTenantSuspended(shopDomain);
-      console.log(`🚫 Marked tenant ${shopDomain} as suspended due to app uninstall`);
+      console.log(`Marked tenant ${shopDomain} as suspended due to app uninstall`);
       break;
     }
     default:

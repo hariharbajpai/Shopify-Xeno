@@ -5,7 +5,7 @@ export async function upsertProducts(tenantId, products) {
   let count = 0;
   for (const p of products) {
     await prisma.product.upsert({
-      where: { shopId: BigInt(p.id) },
+      where: { tenantId_shopId: { tenantId, shopId: BigInt(p.id) } },
       update: {
         title: p.title,
         status: p.status || undefined,

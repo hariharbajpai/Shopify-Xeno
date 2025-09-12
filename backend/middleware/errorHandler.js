@@ -1,7 +1,7 @@
 import { env } from '../utils/env.js';
 
 export function errorHandler(err, req, res, next) {
-  console.error('❌ Error occurred:');
+  console.error('Error occurred:');
   console.error('URL:', req.method, req.url);
   console.error('Error:', err.message);
   

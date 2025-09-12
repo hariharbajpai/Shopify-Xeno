@@ -5,7 +5,7 @@ let redis = null;
 
 export function initRedis() {
   if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-    console.log('⚠️ Redis credentials not found, caching disabled');
+    console.log('Redis credentials not found, caching disabled');
     return null;
   }
 
@@ -15,10 +15,10 @@ export function initRedis() {
       token: env.UPSTASH_REDIS_REST_TOKEN,
     });
     
-    console.log('✅ Redis client initialized successfully');
+    console.log('Redis client initialized successfully');
     return redis;
   } catch (error) {
-    console.error('❌ Failed to initialize Redis:', error.message);
+    console.error('Failed to initialize Redis:', error.message);
     return null;
   }
 }

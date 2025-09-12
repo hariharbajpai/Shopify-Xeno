@@ -10,11 +10,11 @@ export function cacheResponse(ttl = 300, keyGenerator = null) {
       const cachedData = await cache.get(cacheKey);
       
       if (cachedData) {
-        console.log(`🚀 Cache HIT: ${cacheKey}`);
+        console.log(`Cache HIT: ${cacheKey}`);
         return res.json(cachedData);
       }
 
-      console.log(`💾 Cache MISS: ${cacheKey}`);
+      console.log(`Cache MISS: ${cacheKey}`);
       
       const originalJson = res.json;
       
@@ -56,11 +56,11 @@ export const cacheKeyGenerators = {
 export const cacheInvalidation = {
   async invalidateTenant(tenantId, resource = '*') {
     const pattern = cache.tenantKey(tenantId, resource);
-    console.log(`🗑️ Cache invalidation requested for: ${pattern}`);
+    console.log(`Cache invalidation requested for: ${pattern}`);
   },
   
   async invalidateKey(key) {
     await cache.del(key);
-    console.log(`🗑️ Cache invalidated: ${key}`);
+    console.log(`Cache invalidated: ${key}`);
   }
 };

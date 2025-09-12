@@ -5,7 +5,7 @@ export async function upsertCustomers(tenantId, customers) {
   let count = 0;
   for (const c of customers) {
     await prisma.customer.upsert({
-      where: { shopId: BigInt(c.id) },
+      where: { tenantId_shopId: { tenantId, shopId: BigInt(c.id) } },
       update: {
         email: c.email || undefined,
         firstName: c.first_name || undefined,

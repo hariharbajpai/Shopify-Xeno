@@ -60,7 +60,7 @@ model Tenant {
 model Product {
   id         String   @id @default(uuid())
   tenantId   String
-  shopId     BigInt   @unique
+  shopId     BigInt
   title      String
   status     String?
   priceMin   Decimal? @db.Decimal(10,2)
@@ -69,6 +69,7 @@ model Product {
   updatedAt  DateTime @updatedAt
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
 
+  @@unique([tenantId, shopId])
   @@index([tenantId])
   @@index([shopId])
 }
@@ -76,7 +77,7 @@ model Product {
 model Customer {
   id         String   @id @default(uuid())
   tenantId   String
-  shopId     BigInt   @unique
+  shopId     BigInt
   email      String?
   firstName  String?
   lastName   String?
@@ -86,6 +87,7 @@ model Customer {
   updatedAt  DateTime @updatedAt
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
 
+  @@unique([tenantId, shopId])
   @@index([tenantId])
   @@index([shopId])
 }
@@ -93,7 +95,7 @@ model Customer {
 model Order {
   id           String   @id @default(uuid())
   tenantId     String
-  shopId       BigInt   @unique
+  shopId       BigInt
   customerShopId BigInt?
   name         String?
   currency     String?
@@ -109,6 +111,7 @@ model Order {
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
   lineItems    LineItem[]
 
+  @@unique([tenantId, shopId])
   @@index([tenantId])
   @@index([shopId])
   @@index([processedAt])

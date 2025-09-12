@@ -49,6 +49,12 @@ export async function findByShopOrTenantKey(key) {
   });
 }
 
+export async function findTenantByShopDomain(shopDomain) {
+  return prisma.tenant.findUnique({
+    where: { shopDomain }
+  });
+}
+
 export async function findActiveTenant(shopDomain) {
   return prisma.tenant.findFirst({
     where: {

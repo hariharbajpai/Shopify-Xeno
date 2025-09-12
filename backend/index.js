@@ -22,32 +22,32 @@ const app = express();
 async function testDatabaseConnection() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    console.log('Database connected successfully');
 
     await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Database test query passed');
+    console.log('Database test query passed');
 
     initRedis();
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    console.error('Database connection failed:', error.message);
     process.exit(1);
   }
 }
 
 process.on('SIGINT', async () => {
-  console.log('\n🔄 Shutting down...');
+  console.log('\nShutting down...');
   try {
     await prisma.$disconnect();
-    console.log('✅ Database disconnected');
+    console.log('Database disconnected');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during shutdown:', error.message);
+    console.error('Error during shutdown:', error.message);
     process.exit(1);
   }
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n🔄 Received SIGTERM, shutting down...');
+  console.log('\nReceived SIGTERM, shutting down...');
   try {
     await prisma.$disconnect();
     process.exit(0);
@@ -95,7 +95,7 @@ app.use(session({
   cookie: {
     secure: env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 app.use(passport.initialize());
@@ -133,6 +133,51 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+// Data summary endpoint to check ingested data
+app.get('/api/data-summary', async (req, res) => {
+  try {
+    const [tenants, products, customers, orders, lineItems] = await Promise.all([
+      prisma.tenant.count(),
+      prisma.product.count(),
+      prisma.customer.count(),
+      prisma.order.count(),
+      prisma.lineItem.count()
+    ]);
+
+    // Get sample data from each table
+    const [sampleTenant, sampleProduct, sampleCustomer, sampleOrder] = await Promise.all([
+      prisma.tenant.findFirst({ select: { shopDomain: true, status: true, createdAt: true } }),
+      prisma.product.findFirst({ select: { title: true, status: true, priceMin: true } }),
+      prisma.customer.findFirst({ select: { email: true, firstName: true, lastName: true } }),
+      prisma.order.findFirst({ select: { name: true, totalPrice: true, financialStatus: true } })
+    ]);
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      counts: {
+        tenants,
+        products,
+        customers,
+        orders,
+        lineItems
+      },
+      samples: {
+        tenant: sampleTenant,
+        product: sampleProduct,
+        customer: sampleCustomer,
+        order: sampleOrder
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 404
 app.use((_req, res) => res.status(404).json({ message: 'not found' }));
 
@@ -147,17 +192,17 @@ async function startServer() {
 
     // Start the server
     app.listen(env.PORT, () => {
-      console.log(`🚀 API server started successfully!`);
-      console.log(`ℹ️  Server running on: http://localhost:${env.PORT}`);
-      console.log(`ℹ️  Environment: ${env.NODE_ENV}`);
-      console.log(`ℹ️  Health check: http://localhost:${env.PORT}/health`);
-      console.log(`✅ Ready to accept requests!`);
+      console.log('API server started successfully!');
+      console.log(`Server running on: http://localhost:${env.PORT}`);
+      console.log(`Environment: ${env.NODE_ENV}`);
+      console.log(`Health check: http://localhost:${env.PORT}/health`);
+      console.log('Ready to accept requests!');
 
       // Start cron scheduler after server is running
       startCronScheduler();
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message);
+    console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 }
@@ -167,13 +212,12 @@ function startCronScheduler() {
   const cronInterval = process.env.CRON_SYNC_EVERY_MINUTES || '15';
   const cronPattern = `*/${cronInterval} * * * *`; // Every N minutes
 
-  console.log(`⏰ Starting cron scheduler: every ${cronInterval} minutes`);
+  console.log(`Starting cron scheduler: every ${cronInterval} minutes`);
 
   cron.schedule(cronPattern, async () => {
-    console.log(`⚙️ [${new Date().toISOString()}] Running scheduled delta sync...`);
+    console.log(`[${new Date().toISOString()}] Running scheduled delta sync...`);
 
     try {
-      // Get all active tenants
       const activeTenants = await prisma.tenant.findMany({
         where: { status: 'active' },
         select: {
@@ -184,25 +228,24 @@ function startCronScheduler() {
         }
       });
 
-      console.log(`📋 Found ${activeTenants.length} active tenants for delta sync`);
+      console.log(`Found ${activeTenants.length} active tenants for delta sync`);
 
-      // Run delta sync for each tenant
       for (const tenant of activeTenants) {
         try {
           const result = await deltaSync(tenant);
-          console.log(`✅ Delta sync completed for ${tenant.shopDomain}:`, result);
+          console.log(`Delta sync completed for ${tenant.shopDomain}:`, result);
         } catch (tenantError) {
-          console.error(`❌ Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
+          console.error(`Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
         }
       }
 
-      console.log(`🎉 Scheduled delta sync completed at ${new Date().toISOString()}`);
+      console.log(`Scheduled delta sync completed at ${new Date().toISOString()}`);
     } catch (error) {
-      console.error('❌ Cron scheduler error:', error.message);
+      console.error('Cron scheduler error:', error.message);
     }
   });
 
-  console.log(`✅ Cron scheduler started successfully`);
+  console.log('Cron scheduler started successfully');
 }
 
 // Start the application

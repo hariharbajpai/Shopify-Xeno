@@ -1,4 +1,4 @@
-import { backfillAll, backfillProducts, backfillCustomers, backfillOrders, deltaSync } from '../services/ingest.service.js';
+import { backfillAll, backfillProducts, backfillCustomers, backfillOrders, deltaSync, ingestDirectAll, ingestDirectProducts, ingestDirectCustomers, ingestDirectOrders } from '../services/ingest.service.js';
 
 function assertAdmin(req) {
   const role = req.session?.user?.role || req.user?.role;
@@ -45,5 +45,54 @@ export async function ingestDelta(req, res, next) {
   try {
     const out = await deltaSync(req.tenant);
     res.json({ success: true, ...out });
+  } catch (e) { next(e); }
+}
+
+// Direct ingestion controllers for hariharbajpai.myshopify.com
+export async function directIngestAll(req, res, next) {
+  // Only allow in development environment for security
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Direct ingestion not allowed in production' });
+  }
+  
+  try {
+    const result = await ingestDirectAll();
+    res.json(result);
+  } catch (e) { next(e); }
+}
+
+export async function directIngestProducts(req, res, next) {
+  // Only allow in development environment for security
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Direct ingestion not allowed in production' });
+  }
+  
+  try {
+    const result = await ingestDirectProducts();
+    res.json(result);
+  } catch (e) { next(e); }
+}
+
+export async function directIngestCustomers(req, res, next) {
+  // Only allow in development environment for security
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Direct ingestion not allowed in production' });
+  }
+  
+  try {
+    const result = await ingestDirectCustomers();
+    res.json(result);
+  } catch (e) { next(e); }
+}
+
+export async function directIngestOrders(req, res, next) {
+  // Only allow in development environment for security
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Direct ingestion not allowed in production' });
+  }
+  
+  try {
+    const result = await ingestDirectOrders();
+    res.json(result);
   } catch (e) { next(e); }
 }
