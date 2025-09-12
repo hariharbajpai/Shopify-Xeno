@@ -17,49 +17,48 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { deltaSync } from './services/ingest.service.js';
 import { initRedis } from './config/redis.js';
 
+console.log('Starting server initialization...');
+
 const app = express();
 
-// Initialize database connection and Redis (but don't start cron in serverless)
-async function initializeApp() {
+async function testDatabaseConnection() {
   try {
+    console.log('Attempting to connect to database...');
     await prisma.$connect();
     console.log('Database connected successfully');
+
     await prisma.$queryRaw`SELECT 1`;
     console.log('Database test query passed');
+
     initRedis();
   } catch (error) {
-    console.error('App initialization failed:', error.message);
+    console.error('Database connection failed:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
   }
 }
 
-// Only initialize once
-if (process.env.NOW_REGION || process.env.VERCEL_REGION) {
-  // In Vercel environment, initialize without cron
-  initializeApp().catch(console.error);
-} else {
-  // In development/production environment, initialize with full setup
-  process.on('SIGINT', async () => {
-    console.log('\nShutting down...');
-    try {
-      await prisma.$disconnect();
-      console.log('Database disconnected');
-      process.exit(0);
-    } catch (error) {
-      console.error('Error during shutdown:', error.message);
-      process.exit(1);
-    }
-  });
+process.on('SIGINT', async () => {
+  console.log('\nShutting down...');
+  try {
+    await prisma.$disconnect();
+    console.log('Database disconnected');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error.message);
+    process.exit(1);
+  }
+});
 
-  process.on('SIGTERM', async () => {
-    console.log('\nReceived SIGTERM, shutting down...');
-    try {
-      await prisma.$disconnect();
-      process.exit(0);
-    } catch (error) {
-      process.exit(1);
-    }
-  });
-}
+process.on('SIGTERM', async () => {
+  console.log('\nReceived SIGTERM, shutting down...');
+  try {
+    await prisma.$disconnect();
+    process.exit(0);
+  } catch (error) {
+    process.exit(1);
+  }
+});
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -115,6 +114,16 @@ app.use('/', ingestRoutes);
 // Serve test HTML file for OAuth testing
 app.get('/test', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'test-oauth.html'));
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    ok: true,
+    message: '🚀 Shopify Xeno Backend is live!',
+    health: '/health',
+    docs: '/api/docs'
+  });
 });
 
 // health endpoint with database status
@@ -189,74 +198,81 @@ app.use((_req, res) => res.status(404).json({ message: 'not found' }));
 // Use centralized error handler
 app.use(errorHandler);
 
-// Export the app for Vercel
-export default app;
+// Start server with database connection test
+async function startServer() {
+  try {
+    console.log('Starting server with environment:', env.NODE_ENV);
+    console.log('Port:', env.PORT);
+    
+    // Test database connection first
+    await testDatabaseConnection();
 
-// Only start the server if this file is run directly (not on Vercel)
-if (!(process.env.NOW_REGION || process.env.VERCEL_REGION) && import.meta.url === `file://${process.argv[1]}`) {
-  async function startServer() {
-    try {
-      // Test database connection first
-      await initializeApp();
+    // Start the server
+    const server = app.listen(env.PORT, () => {
+      console.log('API server started successfully!');
+      console.log(`Server running on: http://localhost:${env.PORT}`);
+      console.log(`Environment: ${env.NODE_ENV}`);
+      console.log(`Health check: http://localhost:${env.PORT}/health`);
+      console.log('Ready to accept requests!');
 
-      // Start the server
-      app.listen(env.PORT, () => {
-        console.log('API server started successfully!');
-        console.log(`Server running on: http://localhost:${env.PORT}`);
-        console.log(`Environment: ${env.NODE_ENV}`);
-        console.log(`Health check: http://localhost:${env.PORT}/health`);
-        console.log('Ready to accept requests!');
-
-        // Start cron scheduler after server is running
-        startCronScheduler();
-      });
-    } catch (error) {
-      console.error('Failed to start server:', error.message);
-      process.exit(1);
-    }
-  }
-
-  // Cron scheduler for delta sync
-  function startCronScheduler() {
-    const cronInterval = process.env.CRON_SYNC_EVERY_MINUTES || '15';
-    const cronPattern = `*/${cronInterval} * * * *`; // Every N minutes
-
-    console.log(`Starting cron scheduler: every ${cronInterval} minutes`);
-
-    cron.schedule(cronPattern, async () => {
-      console.log(`[${new Date().toISOString()}] Running scheduled delta sync...`);
-
-      try {
-        const activeTenants = await prisma.tenant.findMany({
-          where: { status: 'active' },
-          select: {
-            id: true,
-            shopDomain: true,
-            accessToken: true,
-            tenantId: true
-          }
-        });
-
-        console.log(`Found ${activeTenants.length} active tenants for delta sync`);
-
-        for (const tenant of activeTenants) {
-          try {
-            const result = await deltaSync(tenant);
-            console.log(`Delta sync completed for ${tenant.shopDomain}:`, result);
-          } catch (tenantError) {
-            console.error(`Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
-          }
-        }
-
-        console.log(`Scheduled delta sync completed at ${new Date().toISOString()}`);
-      } catch (error) {
-        console.error('Cron scheduler error:', error.message);
-      }
+      // Start cron scheduler after server is running
+      startCronScheduler();
     });
 
-    console.log('Cron scheduler started successfully');
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('Server error:', error.message);
+      console.error('Stack trace:', error.stack);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
   }
-
-  // Start the application
-  startServer();
 }
+
+// Cron scheduler for delta sync
+function startCronScheduler() {
+  const cronInterval = process.env.CRON_SYNC_EVERY_MINUTES || '15';
+  const cronPattern = `*/${cronInterval} * * * *`; // Every N minutes
+
+  console.log(`Starting cron scheduler: every ${cronInterval} minutes`);
+
+  cron.schedule(cronPattern, async () => {
+    console.log(`[${new Date().toISOString()}] Running scheduled delta sync...`);
+
+    try {
+      const activeTenants = await prisma.tenant.findMany({
+        where: { status: 'active' },
+        select: {
+          id: true,
+          shopDomain: true,
+          accessToken: true,
+          tenantId: true
+        }
+      });
+
+      console.log(`Found ${activeTenants.length} active tenants for delta sync`);
+
+      for (const tenant of activeTenants) {
+        try {
+          const result = await deltaSync(tenant);
+          console.log(`Delta sync completed for ${tenant.shopDomain}:`, result);
+        } catch (tenantError) {
+          console.error(`Delta sync failed for ${tenant.shopDomain}:`, tenantError.message);
+        }
+      }
+
+      console.log(`Scheduled delta sync completed at ${new Date().toISOString()}`);
+    } catch (error) {
+      console.error('Cron scheduler error:', error.message);
+    }
+  });
+
+  console.log('Cron scheduler started successfully');
+}
+
+// Start the application
+console.log('Calling startServer()...');
+startServer();
+console.log('startServer() called');
