@@ -8,6 +8,8 @@ import path from 'path';
 import { env } from './utils/env.js';
 import authRoutes from './routes/auth.routes.js';
 import shopifyRoutes from './routes/shopify.routes.js';
+import insightsRoutes from './routes/insights.routes.js';
+import ingestRoutes from './routes/ingest.routes.js';
 import { prisma } from './models/db.js';
 import passport from './config/passport.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -108,6 +110,8 @@ app.use(morgan('dev'));
 
 app.use('/auth', authRoutes);
 app.use('/', shopifyRoutes);
+app.use('/', insightsRoutes);
+app.use('/', ingestRoutes);
 
 // Serve test HTML file for OAuth testing
 app.get('/test', (req, res) => {

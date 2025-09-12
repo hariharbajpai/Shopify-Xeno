@@ -1,12 +1,20 @@
 // middleware/shopifyHmac.js
 import { verifyWebhookHmac } from '../config/shopify.js';
+import express from 'express';
 
 export function verifyShopifyWebhook(req, res, next) {
   try {
     const hmac = req.get('X-Shopify-Hmac-Sha256') || '';
     
-    // Get raw body - need to capture this before JSON parsing
-    const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body));
+    // Get raw body from the rawBody property set by express.raw()
+    const rawBody = req.rawBody || Buffer.from('{}');
+    
+    // Parse JSON body manually since we're using raw parser
+    try {
+      req.body = JSON.parse(rawBody.toString());
+    } catch (parseError) {
+      req.body = {};
+    }
     
     const isValid = verifyWebhookHmac(rawBody, hmac);
     if (!isValid) {
@@ -20,13 +28,10 @@ export function verifyShopifyWebhook(req, res, next) {
 }
 
 // Middleware to capture raw body for HMAC verification
-export function captureRawBody(req, res, next) {
-  let data = '';
-  req.on('data', chunk => {
-    data += chunk;
-  });
-  req.on('end', () => {
-    req.rawBody = Buffer.from(data);
-    next();
-  });
-}
+// This should be used instead of express.json() for webhook routes
+export const webhookRawBodyParser = express.raw({ 
+  type: 'application/json',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+});
