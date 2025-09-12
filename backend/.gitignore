@@ -3,3 +3,14 @@ node_modules
 .env
 
 /generated/prisma
+
+# Test files
+test-*.js
+*.test.js
+__tests__/
+coverage/
+
+# Documentation files
+*-SUMMARY.md
+*-IMPLEMENTATION.md
+README-*.md

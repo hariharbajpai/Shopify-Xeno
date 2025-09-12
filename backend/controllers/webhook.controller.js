@@ -1,4 +1,3 @@
-// controllers/webhook.controller.js
 import { markTenantSuspended } from '../repositories/tenant.repo.js';
 import { handleWebhook } from '../services/webhook.service.js';
 
@@ -10,7 +9,6 @@ export const handleShopifyWebhook = async (req, res, next) => {
 
     console.log(`📥 Webhook received: ${topic} from ${shop}`);
 
-    // Use the webhook service to handle the event
     await handleWebhook(topic, shop, payload);
 
     res.status(200).send('OK');

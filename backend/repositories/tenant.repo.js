@@ -1,4 +1,3 @@
-// repositories/tenant.repo.js
 import { prisma } from '../models/db.js';
 import crypto from 'crypto';
 
@@ -25,7 +24,7 @@ export async function upsertTenant({
       updatedAt: new Date()
     },
     create: {
-      tenantId: cryptoRandomId(), // stable external id
+      tenantId: cryptoRandomId(),
       shopDomain,
       accessToken,
       scopes,
@@ -39,7 +38,6 @@ export async function upsertTenant({
 }
 
 export async function findByShopOrTenantKey(key) {
-  // key could be shop domain or tenantId
   return prisma.tenant.findFirst({
     where: {
       OR: [
@@ -67,6 +65,35 @@ export async function markTenantSuspended(shopDomain) {
       status: 'suspended',
       uninstalledAt: new Date()
     }
+  });
+}
+
+export async function getTenantCursors(tenantId) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: {
+      productsCursor: true,
+      customersCursor: true,
+      ordersCursor: true
+    }
+  });
+  
+  return {
+    products: tenant?.productsCursor ? new Date(tenant.productsCursor) : null,
+    customers: tenant?.customersCursor ? new Date(tenant.customersCursor) : null,
+    orders: tenant?.ordersCursor ? new Date(tenant.ordersCursor) : null
+  };
+}
+
+export async function setTenantCursors(tenantId, cursors) {
+  const data = {};
+  if (cursors.products) data.productsCursor = new Date(cursors.products);
+  if (cursors.customers) data.customersCursor = new Date(cursors.customers);
+  if (cursors.orders) data.ordersCursor = new Date(cursors.orders);
+  
+  return prisma.tenant.update({
+    where: { id: tenantId },
+    data
   });
 }
 

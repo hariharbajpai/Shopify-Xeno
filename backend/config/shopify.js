@@ -1,8 +1,6 @@
-// config/shopify.js
 import crypto from 'crypto';
 import { env } from '../utils/env.js';
 
-// ---- helpers to read env lazily (avoid crashing at import time) ----
 function getEnv(k, { required = true } = {}) {
   const v = process.env[k];
   if (!v && required) throw new Error(`Missing env: ${k}`);
@@ -13,7 +11,6 @@ function apiVersion() {
   return env.SHOPIFY_API_VERSION || '2024-10';
 }
 
-// ---- 1) OAuth: build install URL for a store ----
 export function buildInstallUrl(shop) {
   if (!shop || !/\.myshopify\.com$/.test(shop)) {
     throw new Error('Invalid shop domain');
@@ -32,17 +29,15 @@ export function buildInstallUrl(shop) {
 
   return {
     url: `https://${shop}/admin/oauth/authorize?${params.toString()}`,
-    state: nonce, // persist this per-session to validate later
+    state: nonce,
   };
 }
 
 // ---- 2) OAuth: verify HMAC on callback query ----
 export function verifyOAuthCallbackHmac(queryObj) {
-  // queryObj is req.query (object). Must include hmac
   const hmac = queryObj.hmac;
   if (!hmac) return false;
 
-  // remove hmac & signature, build sorted query string
   const { hmac: _h, signature, ...rest } = queryObj;
   const message = Object.keys(rest)
     .sort()
@@ -55,11 +50,9 @@ export function verifyOAuthCallbackHmac(queryObj) {
     .update(message, 'utf8')
     .digest('hex');
 
-  // timing-safe compare
   return crypto.timingSafeEqual(Buffer.from(digest, 'utf8'), Buffer.from(hmac, 'utf8'));
 }
 
-// ---- 3) OAuth: exchange code for permanent access token ----
 export async function exchangeCodeForToken(shop, code) {
   const clientId = env.SHOPIFY_API_KEY;
   const clientSecret = env.SHOPIFY_API_SECRET;
@@ -81,11 +74,9 @@ export async function exchangeCodeForToken(shop, code) {
   }
 
   const data = await res.json();
-  // { access_token, scope }
   return data;
 }
 
-// ---- 4) Webhook: verify X-Shopify-Hmac-Sha256 header on raw body ----
 export function verifyWebhookHmac(rawBodyBuffer, headerHmac) {
   if (!headerHmac) return false;
   const secret = env.SHOPIFY_API_SECRET;

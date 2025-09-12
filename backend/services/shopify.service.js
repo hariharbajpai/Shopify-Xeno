@@ -1,4 +1,3 @@
-// services/shopify.service.js
 import { buildInstallUrl, exchangeCodeForToken, verifyOAuthCallbackHmac, buildShopifyClient } from '../config/shopify.js';
 import { upsertTenant } from '../repositories/tenant.repo.js';
 import { env } from '../utils/env.js';
@@ -11,17 +10,14 @@ export function getInstallUrl(shop) {
 }
 
 export async function handleOAuthCallback(query) {
-  // Verify query HMAC
   const isValid = verifyOAuthCallbackHmac(query);
   if (!isValid) throw new Error('Invalid HMAC');
 
   const { code, shop, scope } = query;
   if (!code || !shop) throw new Error('Missing code/shop');
 
-  // Exchange code ➜ token
   const { access_token, scope: grantedScopes } = await exchangeCodeForToken(shop, code);
 
-  // Upsert tenant
   const tenant = await upsertTenant({
     shopDomain: shop,
     accessToken: access_token,

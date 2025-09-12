@@ -15,10 +15,21 @@ model User {
   email        String   @unique
   name         String?
   googleId     String?  @unique
+  passwordHash String?  // Keep existing field to avoid data loss
   avatar       String?
   role         String   @default("user")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  @@index([userId])
+  @@index([token])
 }
 model Tenant {
   id           String  @id @default(uuid())
@@ -31,6 +42,12 @@ model Tenant {
   currency     String? @default("USD")
   timezone     String?
   status       String  @default("active")
+  
+  // Delta sync cursors for last updated_at_min
+  productsCursor   DateTime?
+  customersCursor  DateTime?
+  ordersCursor     DateTime?
+  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -125,3 +142,4 @@ model WebhookEvent {
   @@index([tenantId, topic])
   @@index([receivedAt])
 }
+

@@ -1,4 +1,3 @@
-// middleware/errorHandler.js
 import { env } from '../utils/env.js';
 
 export function errorHandler(err, req, res, next) {
@@ -10,7 +9,6 @@ export function errorHandler(err, req, res, next) {
     console.error('Stack:', err.stack);
   }
   
-  // Database-specific error handling
   if (err.code === 'P2002') {
     return res.status(409).json({ 
       message: 'duplicate entry', 
@@ -24,7 +22,6 @@ export function errorHandler(err, req, res, next) {
     });
   }
   
-  // JWT-specific error handling
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({ message: 'invalid token' });
   }
@@ -33,7 +30,6 @@ export function errorHandler(err, req, res, next) {
     return res.status(401).json({ message: 'token expired' });
   }
   
-  // Validation errors
   if (err.name === 'ValidationError') {
     return res.status(400).json({ 
       message: 'validation error', 
@@ -41,7 +37,6 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
-  // Shopify API errors
   if (err.message.includes('Shopify') && err.message.includes('failed')) {
     return res.status(502).json({
       message: 'External API error',
@@ -49,7 +44,6 @@ export function errorHandler(err, req, res, next) {
     });
   }
   
-  // Default error response
   res.status(err.status || 500).json({ 
     message: env.NODE_ENV === 'development' ? err.message : 'internal server error',
     ...(env.NODE_ENV === 'development' && { stack: err.stack })

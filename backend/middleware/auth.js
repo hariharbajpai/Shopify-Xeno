@@ -1,4 +1,3 @@
-// middleware/auth.js
 import jwt from 'jsonwebtoken';
 import { env } from '../utils/env.js';
 import { prisma } from '../models/db.js';
@@ -6,7 +5,7 @@ import { prisma } from '../models/db.js';
 export async function authenticateToken(req, res, next) {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ message: 'Access token required' });
@@ -14,7 +13,6 @@ export async function authenticateToken(req, res, next) {
 
     const decoded = jwt.verify(token, env.JWT_SECRET);
     
-    // Verify user still exists and is active
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, name: true, avatar: true, role: true }

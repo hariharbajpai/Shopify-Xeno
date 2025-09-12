@@ -1,4 +1,3 @@
-// middleware/tenant.js
 import { findByShopOrTenantKey } from '../repositories/tenant.repo.js';
 
 export async function resolveTenant(req, res, next) {

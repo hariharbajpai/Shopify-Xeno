@@ -2,13 +2,38 @@ import { buildShopifyClient } from '../config/shopify.js';
 import { upsertProducts } from '../repositories/product.repo.js';
 import { upsertCustomers } from '../repositories/customer.repo.js';
 import { upsertOrdersWithItems } from '../repositories/order.repo.js';
+import { getTenantCursors, setTenantCursors } from '../repositories/tenant.repo.js';
+import { cache } from '../config/redis.js';
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function withRateLimit(fn, attempt = 0) {
+  try {
+    const out = await fn();
+    await sleep(500);
+    return out;
+  } catch (e) {
+    const msg = e?.message || '';
+    const isRetryable = /429|5\d\d|ETIMEDOUT|ECONNRESET/i.test(msg);
+    if (isRetryable && attempt < 5) {
+      const backoff = Math.min(16000, 500 * Math.pow(2, attempt));
+      await sleep(backoff);
+      return withRateLimit(fn, attempt + 1);
+    }
+    throw e;
+  }
+}
 
 export async function backfillProducts(tenant) {
   const client = buildShopifyClient({ shop: tenant.shopDomain, accessToken: tenant.accessToken });
   let total = 0;
   for await (const page of client.paginate('/products.json', { query: { fields: 'id,title,status,variants' }, limit: 250 })) {
-    total += await upsertProducts(tenant.id, page.products || []);
+    total += await withRateLimit(() => upsertProducts(tenant.id, page.products || []));
   }
+  
+  await cache.del(cache.tenantKey(tenant.id, 'products'));
+  await cache.del(cache.tenantKey(tenant.id, 'insights', 'top-products'));
+  
   return total;
 }
 
@@ -16,20 +41,35 @@ export async function backfillCustomers(tenant) {
   const client = buildShopifyClient({ shop: tenant.shopDomain, accessToken: tenant.accessToken });
   let total = 0;
   for await (const page of client.paginate('/customers.json', { query: { fields: 'id,email,first_name,last_name,total_spent,orders_count' }, limit: 250 })) {
-    total += await upsertCustomers(tenant.id, page.customers || []);
+    total += await withRateLimit(() => upsertCustomers(tenant.id, page.customers || []));
   }
+  
+  // Invalidate customer-related cache
+  await cache.del(cache.tenantKey(tenant.id, 'customers'));
+  await cache.del(cache.tenantKey(tenant.id, 'insights', 'top-customers'));
+  
   return total;
 }
 
 export async function backfillOrders(tenant, { since } = {}) {
   const client = buildShopifyClient({ shop: tenant.shopDomain, accessToken: tenant.accessToken });
   let total = 0;
-  const query = { status: 'any', fields: 'id,name,currency,financial_status,fulfillment_status,total_price,subtotal_price,total_tax,total_discounts,processed_at,customer,line_items' };
+  const query = {
+    status: 'any',
+    fields: 'id,name,currency,financial_status,fulfillment_status,total_price,subtotal_price,total_tax,total_discounts,processed_at,customer,line_items',
+  };
   if (since) query.created_at_min = new Date(since).toISOString();
 
   for await (const page of client.paginate('/orders.json', { query, limit: 250 })) {
-    total += await upsertOrdersWithItems(tenant.id, page.orders || []);
+    total += await withRateLimit(() => upsertOrdersWithItems(tenant.id, page.orders || []));
   }
+  
+  // Invalidate order-related cache
+  await cache.del(cache.tenantKey(tenant.id, 'orders'));
+  await cache.del(cache.tenantKey(tenant.id, 'insights', 'recent-orders'));
+  await cache.del(cache.tenantKey(tenant.id, 'insights', 'orders-by-date'));
+  await cache.del(cache.tenantKey(tenant.id, 'insights', 'summary'));
+  
   return total;
 }
 
@@ -40,4 +80,49 @@ export async function backfillAll(tenant, opts = {}) {
     backfillOrders(tenant, opts),
   ]);
   return { products: p, customers: c, orders: o };
+}
+
+// --- DELTA SYNC (updated_at_min) ---
+export async function deltaSync(tenant) {
+  const client = buildShopifyClient({ shop: tenant.shopDomain, accessToken: tenant.accessToken });
+
+  // read cursors (per-tenant)
+  const cursors = await getTenantCursors(tenant.id);
+  const nowIso = new Date().toISOString();
+
+  const out = { products: 0, customers: 0, orders: 0 };
+
+  // products
+  {
+    const query = { fields: 'id,title,status,variants' };
+    if (cursors.products) query.updated_at_min = cursors.products.toISOString();
+    for await (const page of client.paginate('/products.json', { query, limit: 250 })) {
+      out.products += await withRateLimit(() => upsertProducts(tenant.id, page.products || []));
+    }
+  }
+
+  // customers
+  {
+    const query = { fields: 'id,email,first_name,last_name,total_spent,orders_count' };
+    if (cursors.customers) query.updated_at_min = cursors.customers.toISOString();
+    for await (const page of client.paginate('/customers.json', { query, limit: 250 })) {
+      out.customers += await withRateLimit(() => upsertCustomers(tenant.id, page.customers || []));
+    }
+  }
+
+  // orders
+  {
+    const query = {
+      status: 'any',
+      fields: 'id,name,currency,financial_status,fulfillment_status,total_price,subtotal_price,total_tax,total_discounts,processed_at,customer,line_items',
+    };
+    if (cursors.orders) query.updated_at_min = cursors.orders.toISOString();
+    for await (const page of client.paginate('/orders.json', { query, limit: 250 })) {
+      out.orders += await withRateLimit(() => upsertOrdersWithItems(tenant.id, page.orders || []));
+    }
+  }
+
+  // advance cursors to "now"
+  await setTenantCursors(tenant.id, { products: nowIso, customers: nowIso, orders: nowIso });
+  return out;
 }

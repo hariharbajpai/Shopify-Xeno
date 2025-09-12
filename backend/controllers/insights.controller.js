@@ -33,7 +33,6 @@ export async function ordersByDate(req, res, next) {
     const start = from ? new Date(from) : subDays(new Date(), 30);
     const end = to ? new Date(to) : new Date();
 
-    // Group by day via raw SQL for performance
     const data = await prisma.$queryRaw`
       SELECT DATE_TRUNC('day', "processedAt") AS day,
              COUNT(*) AS orders,

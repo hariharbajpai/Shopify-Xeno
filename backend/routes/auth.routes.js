@@ -10,7 +10,6 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Google OAuth Routes
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
@@ -20,9 +19,8 @@ router.get('/google/callback',
   googleAuthSuccess
 );
 
-// Auth Status Routes
 router.get('/user', getCurrentUser);
-router.get('/current', authenticateToken, getCurrentUser); // JWT-protected endpoint
+router.get('/current', authenticateToken, getCurrentUser);
 router.post('/logout', logout);
 router.get('/failure', googleAuthFailure);
 

@@ -1,5 +1,5 @@
 import * as shopify from '../services/shopify.service.js';
-import { verifyOAuthCallbackHmac, exchangeCodeForToken } from '../config/shopify.js';
+import { verifyOAuthCallbackHmac, exchangeCodeForToken, registerWebhooks } from '../config/shopify.js';
 import { upsertTenant } from '../repositories/tenant.repo.js';
 
 export const startShopifyInstall = async (req, res, next) => {
@@ -50,7 +50,31 @@ export const shopifyCallback = async (req, res, next) => {
       status: 'active'
     });
 
-    // 5) Redirect to your frontend to continue onboarding
+    // 5) Register webhooks for real-time updates
+    try {
+      const webhookTopics = [
+        'orders/create',
+        'orders/updated', 
+        'customers/create',
+        'customers/updated',
+        'products/create',
+        'products/updated',
+        'app/uninstalled'
+      ];
+      
+      const webhookResults = await registerWebhooks({
+        shop,
+        accessToken,
+        topics: webhookTopics
+      });
+      
+      console.log(`📥 Registered ${webhookResults.filter(r => r.ok).length}/${webhookResults.length} webhooks for ${shop}`);
+    } catch (webhookError) {
+      console.error('⚠️ Webhook registration failed:', webhookError.message);
+      // Continue with install even if webhooks fail
+    }
+
+    // 6) Redirect to your frontend to continue onboarding
     const redirectUrl = process.env.FRONTEND_SUCCESS_URL || '/';
     return res.redirect(`${redirectUrl}?installed_shop=${encodeURIComponent(shop)}&tenantId=${tenant.id}`);
   } catch (err) {
