@@ -16,6 +16,8 @@ function safeRedirect(url, fallback) {
 
 export const googleAuthSuccess = async (req, res) => {
   try {
+    console.log('Google auth success, user:', req.user);
+    
     if (!req.user) {
       const target = safeRedirect(`${FRONTEND_FAILURE_URL}?error=authentication_failed`, FRONTEND_FAILURE_URL);
       return res.redirect(target);
@@ -59,8 +61,11 @@ export const googleAuthSuccess = async (req, res) => {
     };
 
     req.session.v = 1;
+    
+    console.log('Session set, redirecting to:', FRONTEND_SUCCESS_URL);
 
     const target = safeRedirect(FRONTEND_SUCCESS_URL, FRONTEND_FAILURE_URL);
+    console.log('Redirecting to:', target);
     return res.redirect(target);
   } catch (error) {
     console.error('Google auth success error:', error);
@@ -76,6 +81,12 @@ export const googleAuthFailure = (_req, res) => {
 
 export const getCurrentUser = async (req, res) => {
   try {
+    console.log('Getting current user, session:', {
+      sessionExists: !!req.session,
+      userInSession: req.session ? req.session.user : null,
+      sessionId: req.sessionID
+    });
+    
     if (!req.session?.user) {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
@@ -111,7 +122,7 @@ export const logout = (req, res) => {
       }
       res.clearCookie(SESSION_COOKIE_NAME, {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
         domain: process.env.COOKIE_DOMAIN || undefined,
         path: '/',
