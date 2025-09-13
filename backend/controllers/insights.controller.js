@@ -81,7 +81,18 @@ export async function ordersByDate(req, res, next) {
       `;
     }
 
-    res.json({ success: true, range: { from: start, to: end }, data });
+    // Convert BigInt values to strings to avoid JSON serialization issues
+    const serializedData = data.map(row => {
+      const serializedRow = { ...row };
+      for (const key in serializedRow) {
+        if (typeof serializedRow[key] === 'bigint') {
+          serializedRow[key] = serializedRow[key].toString();
+        }
+      }
+      return serializedRow;
+    });
+
+    res.json({ success: true, range: { from: start, to: end }, data: serializedData });
   } catch (e) { 
     console.error('Error in ordersByDate:', e);
     next(e); 
@@ -147,7 +158,18 @@ export async function topCustomers(req, res, next) {
       `;
     }
 
-    res.json({ success: true, data: rows });
+    // Convert BigInt values to strings to avoid JSON serialization issues
+    const serializedRows = rows.map(row => {
+      const serializedRow = { ...row };
+      for (const key in serializedRow) {
+        if (typeof serializedRow[key] === 'bigint') {
+          serializedRow[key] = serializedRow[key].toString();
+        }
+      }
+      return serializedRow;
+    });
+
+    res.json({ success: true, data: serializedRows });
   } catch (e) { 
     console.error('Error in topCustomers:', e);
     next(e); 
@@ -207,7 +229,18 @@ export async function topProducts(req, res, next) {
       `;
     }
 
-    res.json({ success: true, data: rows });
+    // Convert BigInt values to strings to avoid JSON serialization issues
+    const serializedRows = rows.map(row => {
+      const serializedRow = { ...row };
+      for (const key in serializedRow) {
+        if (typeof serializedRow[key] === 'bigint') {
+          serializedRow[key] = serializedRow[key].toString();
+        }
+      }
+      return serializedRow;
+    });
+
+    res.json({ success: true, data: serializedRows });
   } catch (e) { 
     console.error('Error in topProducts:', e);
     next(e); 
@@ -264,15 +297,18 @@ export async function recentOrders(req, res, next) {
       });
     }
 
+    // Convert BigInt values to strings to avoid JSON serialization issues
+    const serializedOrders = orders.map(order => ({
+      orderId: order.shopId.toString(),
+      name: order.name,
+      totalPrice: Number(order.totalPrice),
+      financialStatus: order.financialStatus,
+      createdAt: order.processedAt
+    }));
+
     res.json({ 
       success: true, 
-      data: orders.map(order => ({
-        orderId: order.shopId.toString(),
-        name: order.name,
-        totalPrice: Number(order.totalPrice),
-        financialStatus: order.financialStatus,
-        createdAt: order.processedAt
-      })),
+      data: serializedOrders,
       pagination: {
         limit,
         offset,
