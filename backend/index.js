@@ -63,26 +63,28 @@ process.on('SIGTERM', async () => {
  
 app.use(cors({
   origin: function (origin, callback) {
-   
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    
+    // In development, be more permissive but still validate
     if (env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-     
-    if (env.CORS_ORIGINS.length && env.CORS_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    }
-
-     
-    if (env.NODE_ENV === 'development') {
+      // Allow localhost, 127.0.0.1, and null origins
       if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'null') {
         return callback(null, true);
       }
+      // If specific CORS origins are defined, check against them
+      if (env.CORS_ORIGINS.length && env.CORS_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+      // If no specific origins defined in dev, allow all
+      if (!env.CORS_ORIGINS.length) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
     }
-
-    if (!env.CORS_ORIGINS.length) return callback(null, true);
+    
+    // In production, strictly validate against CORS_ORIGINS
+    if (env.CORS_ORIGINS.length && env.CORS_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
 
     callback(new Error('Not allowed by CORS'));
   },
@@ -156,7 +158,7 @@ app.get('/health', async (_req, res) => {
   }
 });
 
- 
+// Data summary endpoint to check ingested data
 app.get('/api/data-summary', async (req, res) => {
   try {
     const [tenants, products, customers, orders, lineItems] = await Promise.all([
