@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "ingest": "node utils/shopify-ingest.js",
+    "ingest:products": "node utils/shopify-ingest.js products",
+    "ingest:customers": "node utils/shopify-ingest.js customers",
+    "ingest:orders": "node utils/shopify-ingest.js orders"
   },
   "keywords": [],
   "author": "",
