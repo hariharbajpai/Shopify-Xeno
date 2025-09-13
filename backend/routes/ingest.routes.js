@@ -10,11 +10,18 @@ import { ingestAll, ingestProducts, ingestCustomers, ingestOrders, ingestDelta, 
 const router = Router();
 
 // Remove authentication middleware from routes but keep tenant resolution
+// COMMENTING OUT AUTHENTICATION MIDDLEWARE - ORIGINAL CODE:
+// router.post('/ingest/full', resolveTenant, requireSessionUser, requireAdmin, ingestAll);
+// router.post('/ingest/products', resolveTenant, requireSessionUser, requireAdmin, ingestProducts);
+// router.post('/ingest/customers', resolveTenant, requireSessionUser, requireAdmin, ingestCustomers);
+// router.post('/ingest/orders', resolveTenant, requireSessionUser, requireAdmin, ingestOrders);
+// router.get('/ingest/delta', resolveTenant, requireSessionUser, ingestDelta);
+
+// NEW CODE WITHOUT AUTHENTICATION:
 router.post('/ingest/full', resolveTenant, ingestAll);
 router.post('/ingest/products', resolveTenant, ingestProducts);
 router.post('/ingest/customers', resolveTenant, ingestCustomers);
 router.post('/ingest/orders', resolveTenant, ingestOrders);
-
 router.get('/ingest/delta', resolveTenant, ingestDelta);
 
 // Direct ingestion routes for hariharbajpai.myshopify.com (no auth required for testing)

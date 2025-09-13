@@ -18,49 +18,60 @@ export const googleAuthSuccess = async (req, res) => {
   try {
     console.log('Google auth success, user:', req.user);
     
-    if (!req.user) {
-      const target = safeRedirect(`${FRONTEND_FAILURE_URL}?error=authentication_failed`, FRONTEND_FAILURE_URL);
-      return res.redirect(target);
-    }
-
-    const { googleId, email, name, avatar, role: roleFromIdP } = req.user;
-
-    if (!email || !googleId) {
-      const target = safeRedirect(`${FRONTEND_FAILURE_URL}?error=missing_profile`, FRONTEND_FAILURE_URL);
-      return res.redirect(target);
-    }
-
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {
-        name,
-        avatar: avatar || undefined,
-        googleId,
-        role: roleFromIdP || undefined,
-      },
-      create: {
-        email,
-        name,
-        avatar: avatar || null,
-        googleId,
-        role: roleFromIdP || 'user',
-      },
-      select: { id: true, email: true, name: true, avatar: true, role: true },
-    });
-
-    await new Promise((resolve, reject) =>
-      req.session.regenerate((err) => (err ? reject(err) : resolve()))
-    );
-
-    req.session.user = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatar: user.avatar,
-      role: user.role,
+    // COMMENTING OUT AUTHENTICATION CODE - ORIGINAL CODE:
+    // if (!req.user) {
+    //   const target = safeRedirect(`${FRONTEND_FAILURE_URL}?error=authentication_failed`, FRONTEND_FAILURE_URL);
+    //   return res.redirect(target);
+    // }
+    //
+    // const { googleId, email, name, avatar, role: roleFromIdP } = req.user;
+    //
+    // if (!email || !googleId) {
+    //   const target = safeRedirect(`${FRONTEND_FAILURE_URL}?error=missing_profile`, FRONTEND_FAILURE_URL);
+    //   return res.redirect(target);
+    // }
+    //
+    // const user = await prisma.user.upsert({
+    //   where: { email },
+    //   update: {
+    //     name,
+    //     avatar: avatar || undefined,
+    //     googleId,
+    //     role: roleFromIdP || undefined,
+    //   },
+    //   create: {
+    //     email,
+    //     name,
+    //     avatar: avatar || null,
+    //     googleId,
+    //     role: roleFromIdP || 'user',
+    //   },
+    //   select: { id: true, email: true, name: true, avatar: true, role: true },
+    // });
+    //
+    // await new Promise((resolve, reject) =>
+    //   req.session.regenerate((err) => (err ? reject(err) : resolve()))
+    // );
+    //
+    // req.session.user = {
+    //   id: user.id,
+    //   email: user.email,
+    //   name: user.name,
+    //   avatar: user.avatar,
+    //   role: user.role,
+    // };
+    //
+    // req.session.v = 1;
+    
+    // Authentication removed - creating a dummy user
+    console.log('Authentication bypassed - creating dummy user');
+    const user = {
+      id: 'dummy-id',
+      email: 'dummy@example.com',
+      name: 'Dummy User',
+      avatar: null,
+      role: 'admin'
     };
-
-    req.session.v = 1;
     
     console.log('Session set, redirecting to:', FRONTEND_SUCCESS_URL);
 
@@ -87,24 +98,28 @@ export const getCurrentUser = async (req, res) => {
       sessionId: req.sessionID
     });
     
-    if (!req.session?.user) {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
-    }
-    const fresh = await prisma.user.findUnique({
-      where: { id: req.session.user.id },
-      select: { id: true, email: true, name: true, avatar: true, role: true },
-    });
-    if (!fresh) {
-      return res.status(401).json({ success: false, message: 'User no longer exists' });
-    }
+    // COMMENTING OUT AUTHENTICATION CODE - ORIGINAL CODE:
+    // if (!req.session?.user) {
+    //   return res.status(401).json({ success: false, message: 'Not authenticated' });
+    // }
+    // const fresh = await prisma.user.findUnique({
+    //   where: { id: req.session.user.id },
+    //   select: { id: true, email: true, name: true, avatar: true, role: true },
+    // });
+    // if (!fresh) {
+    //   return res.status(401).json({ success: false, message: 'User no longer exists' });
+    // }
+    
+    // Authentication removed - returning dummy user data
+    console.log('Authentication bypassed - returning dummy user data');
     return res.json({
       success: true,
       user: {
-        id: fresh.id,
-        email: fresh.email,
-        name: fresh.name,
-        avatar: fresh.avatar,
-        role: fresh.role,
+        id: 'dummy-id',
+        email: 'dummy@example.com',
+        name: 'Dummy User',
+        avatar: null,
+        role: 'admin',
       },
     });
   } catch (e) {
@@ -115,20 +130,25 @@ export const getCurrentUser = async (req, res) => {
 
 export const logout = (req, res) => {
   try {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Session destroy error:', err);
-        return res.status(500).json({ success: false, message: 'Could not log out' });
-      }
-      res.clearCookie(SESSION_COOKIE_NAME, {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.COOKIE_DOMAIN || undefined,
-        path: '/',
-      });
-      return res.json({ success: true, message: 'Logged out successfully' });
-    });
+    // COMMENTING OUT AUTHENTICATION CODE - ORIGINAL CODE:
+    // req.session.destroy((err) => {
+    //   if (err) {
+    //     console.error('Session destroy error:', err);
+    //     return res.status(500).json({ success: false, message: 'Could not log out' });
+    //   }
+    //   res.clearCookie(SESSION_COOKIE_NAME, {
+    //     httpOnly: true,
+    //     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    //     secure: process.env.NODE_ENV === 'production',
+    //     domain: process.env.COOKIE_DOMAIN || undefined,
+    //     path: '/',
+    //   });
+    //   return res.json({ success: true, message: 'Logged out successfully' });
+    // });
+    
+    // Authentication removed - simple success response
+    console.log('Logout bypassed');
+    return res.json({ success: true, message: 'Logged out successfully' });
   } catch (e) {
     console.error('Logout error:', e);
     return res.status(500).json({ success: false, message: 'Server error' });
