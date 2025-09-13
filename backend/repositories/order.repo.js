@@ -6,7 +6,7 @@ export async function upsertOrdersWithItems(tenantId, orders) {
 
   for (const o of orders) {
     const order = await prisma.order.upsert({
-      where: { tenantId: tenantId, shopId: BigInt(o.id) },
+      where: { tenantId_shopId: { tenantId, shopId: BigInt(o.id) } },
       update: {
         customerShopId: o.customer?.id ? BigInt(o.customer.id) : undefined,
         name: o.name || undefined,
