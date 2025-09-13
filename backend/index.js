@@ -60,24 +60,22 @@ process.on('SIGTERM', async () => {
   }
 });
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
+ 
 app.use(cors({
   origin: function (origin, callback) {
+   
     if (!origin) return callback(null, true);
-
+    
+    
+    if (env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+     
     if (env.CORS_ORIGINS.length && env.CORS_ORIGINS.includes(origin)) {
       return callback(null, true);
     }
 
+     
     if (env.NODE_ENV === 'development') {
       if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'null') {
         return callback(null, true);
@@ -89,6 +87,17 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
+}));
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
 }));
 app.use(apiLimiter);
 app.use(express.json());
@@ -111,25 +120,25 @@ app.use('/', shopifyRoutes);
 app.use('/', insightsRoutes);
 app.use('/', ingestRoutes);
 
-// Serve test HTML file for OAuth testing
-app.get('/test', (req, res) => {
-  res.sendFile(path.join(process.cwd(), 'test-oauth.html'));
+ 
+app.get('/login-test', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'login-test.html'));
 });
-
-// Root route
+ 
 app.get('/', (req, res) => {
   res.json({
     ok: true,
     message: '🚀 Shopify Xeno Backend is live!',
     health: '/health',
-    docs: '/api/docs'
+    docs: '/api/docs',
+    loginTest: '/login-test'
   });
 });
 
-// health endpoint with database status
+ 
 app.get('/health', async (_req, res) => {
   try {
-    // Test database connection
+    
     await prisma.$queryRaw`SELECT 1`;
     res.json({
       ok: true,
@@ -147,7 +156,7 @@ app.get('/health', async (_req, res) => {
   }
 });
 
-// Data summary endpoint to check ingested data
+ 
 app.get('/api/data-summary', async (req, res) => {
   try {
     const [tenants, products, customers, orders, lineItems] = await Promise.all([
@@ -195,16 +204,16 @@ app.get('/api/data-summary', async (req, res) => {
 // 404
 app.use((_req, res) => res.status(404).json({ message: 'not found' }));
 
-// Use centralized error handler
+ 
 app.use(errorHandler);
 
-// Start server with database connection test
+ 
 async function startServer() {
   try {
     console.log('Starting server with environment:', env.NODE_ENV);
     console.log('Port:', env.PORT);
     
-    // Test database connection first
+  
     await testDatabaseConnection();
 
     // Start the server
@@ -213,13 +222,14 @@ async function startServer() {
       console.log(`Server running on: http://localhost:${env.PORT}`);
       console.log(`Environment: ${env.NODE_ENV}`);
       console.log(`Health check: http://localhost:${env.PORT}/health`);
+      console.log(`Login Test Page: http://localhost:${env.PORT}/login-test`);
       console.log('Ready to accept requests!');
 
       // Start cron scheduler after server is running
       startCronScheduler();
     });
 
-    // Handle server errors
+    
     server.on('error', (error) => {
       console.error('Server error:', error.message);
       console.error('Stack trace:', error.stack);
