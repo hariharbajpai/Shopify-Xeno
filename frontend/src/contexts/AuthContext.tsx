@@ -7,7 +7,6 @@ type Ctx = {
   isLoading: boolean;
   setUserFromIdToken: (idToken: string) => void;
   logout: () => void;
-  debugForceLogin: () => void;
 };
 
 const AuthCtx = createContext<Ctx | null>(null);
@@ -46,24 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(u);
   }
 
-  function debugForceLogin() {
-    const u: User = {
-      sub: "demo",
-      name: "Demo User",
-      email: "demo@local.test",
-      picture: "https://i.pravatar.cc/80?img=5",
-    };
-    localStorage.setItem("demo_user", JSON.stringify(u));
-    setUser(u);
-  }
-
   function logout() {
     localStorage.removeItem("demo_user");
     setUser(null);
   }
 
   return (
-    <AuthCtx.Provider value={{ user, isLoading, setUserFromIdToken, logout, debugForceLogin }}>
+    <AuthCtx.Provider value={{ user, isLoading, setUserFromIdToken, logout }}>
       {children}
     </AuthCtx.Provider>
   );

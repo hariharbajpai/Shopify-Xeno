@@ -33,7 +33,7 @@ const DetailedFeatures = () => {
               "We connected multiple dev stores and got clean, evidence-backed insights in minutes—LTV, cohorts, and top SKUs—without building a pipeline."
             </blockquote>
             <div className="text-sm text-muted-foreground">
-              <div className="font-semibold text-foreground">Mohamed Hersi</div>
+              <div className="font-semibold text-foreground">Harihar Bajpai</div>
               Product & UX Lead
             </div>
           </div>

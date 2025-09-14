@@ -935,7 +935,7 @@ export default function Dashboard() {
               className='w-12 h-12 rounded-full border-2 border-cyan-200'
             />
             <div>
-              <h1 className='text-3xl font-bold text-black'>🚀 Analytics Dashboard</h1>
+              <h1 className='text-3xl font-bold text-black'> Analytics Dashboard</h1>
               <div className='text-sm text-gray-600'>
                 Welcome back, <span className="font-semibold text-cyan-600">{user?.name ?? 'Guest'}</span> • 
                 <span className="text-green-600 ml-1">Enterprise Plan</span>
