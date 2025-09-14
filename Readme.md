@@ -435,7 +435,7 @@ All webhooks are verified using HMAC signatures:
 
 ### Prisma Schema
 
-```prisma
+``prisma
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -938,7 +938,7 @@ All Shopify webhooks and OAuth callbacks are verified using HMAC signatures:
 
 ### Running Tests Locally
 
-```bash
+```
 # Run all tests
 npm test
 
@@ -976,9 +976,13 @@ The application can be deployed to:
 3. **Heroku** - With Procfile and environment setup
 4. **Vercel** - With serverless function adaptation
 
+### Live Demo
+
+You can access the deployed application at: [https://shopify-xeno.onrender.com](https://shopify-xeno.onrender.com)
+
 ### Build & Run Commands
 
-```bash
+```
 # Install dependencies
 npm install
 
