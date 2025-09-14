@@ -1,0 +1,70 @@
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+type User = { sub: string; email?: string; name?: string; picture?: string };
+type Ctx = {
+  user: User | null;
+  isLoading: boolean;
+  setUserFromIdToken: (idToken: string) => void;
+  logout: () => void;
+  debugForceLogin: () => void;
+};
+
+const AuthCtx = createContext<Ctx | null>(null);
+export const useAuth = () => useContext(AuthCtx)!;
+
+// Decode JWT payload without verifying signature (demo only)
+function decodeJwt<T = any>(jwt: string): T | null {
+  try {
+    const [, payload] = jwt.split(".");
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("demo_user");
+    if (raw) setUser(JSON.parse(raw));
+    setIsLoading(false);
+  }, []);
+
+  function setUserFromIdToken(idToken: string) {
+    const claims = decodeJwt<User>(idToken);
+    const u: User = {
+      sub: claims?.sub ?? crypto.randomUUID(),
+      email: claims?.email,
+      name: claims?.name,
+      picture: claims?.picture,
+    };
+    localStorage.setItem("demo_user", JSON.stringify(u));
+    setUser(u);
+  }
+
+  function debugForceLogin() {
+    const u: User = {
+      sub: "demo",
+      name: "Demo User",
+      email: "demo@local.test",
+      picture: "https://i.pravatar.cc/80?img=5",
+    };
+    localStorage.setItem("demo_user", JSON.stringify(u));
+    setUser(u);
+  }
+
+  function logout() {
+    localStorage.removeItem("demo_user");
+    setUser(null);
+  }
+
+  return (
+    <AuthCtx.Provider value={{ user, isLoading, setUserFromIdToken, logout, debugForceLogin }}>
+      {children}
+    </AuthCtx.Provider>
+  );
+}

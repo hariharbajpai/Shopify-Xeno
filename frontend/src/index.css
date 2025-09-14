@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Xenoit Design System - Inspired by modern, minimal aesthetics */
+
+@layer base {
+  :root {
+    --background: 50 20% 97%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 240 10% 3.9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 45 93% 58%;
+    --accent-foreground: 240 10% 3.9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 45 93% 58%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-radial: radial-gradient(60% 40% at 50% 0%, hsl(45 93% 58% / 0.12), transparent 60%);
+    --gradient-subtle: linear-gradient(135deg, hsl(45 93% 58% / 0.05), hsl(240 4.8% 95.9% / 0.8));
+
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(240 10% 3.9% / 0.1);
+    --shadow-glow: 0 0 40px hsl(45 93% 58% / 0.15);
+
+    /* Typography */
+    --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 10% 3.9%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 45 93% 58%;
+    --accent-foreground: 240 10% 3.9%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 45 93% 58%;
+
+    /* Dark mode gradients */
+    --gradient-radial: radial-gradient(60% 40% at 50% 0%, hsl(45 93% 58% / 0.08), transparent 60%);
+    --gradient-subtle: linear-gradient(135deg, hsl(45 93% 58% / 0.03), hsl(240 3.7% 15.9% / 0.8));
+    --shadow-elegant: 0 10px 30px -10px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 40px hsl(45 93% 58% / 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+}
+
+@layer components {
+  /* Hero Section Styles */
+  .hero-background {
+    background: var(--gradient-radial), hsl(var(--background));
+  }
+
+  /* Button Variants */
+  .btn-hero {
+    @apply bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg px-8 py-4 font-semibold;
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .btn-hero:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .btn-ghost {
+    @apply border border-border bg-transparent hover:bg-muted text-foreground transition-all duration-300 rounded-lg px-8 py-4 font-medium;
+  }
+
+  /* Animation Classes */
+  .fade-in-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .fade-in-up-delay {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease-out 0.2s forwards;
+  }
+
+  .fade-in-up-delay-2 {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease-out 0.4s forwards;
+  }
+
+  /* Logo Animation */
+  .logo-glow {
+    transition: var(--transition-smooth);
+  }
+
+  .logo-glow:hover {
+    filter: drop-shadow(0 0 8px hsl(var(--accent) / 0.5));
+  }
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
