@@ -78,7 +78,7 @@ This backend service handles:
 ---
 
 ## 2) Architecture
-<image src="archeticture.png" alt="Xenoit Architecture">
+<image src="![architecture.png](https://github.com/hariharbajpai/Shopify-Xeno/blob/main/architecture.png)" alt="Xenoit Architecture">\r
 ### System Architecture
 
 ### Components and Responsibilities
