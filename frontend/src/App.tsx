@@ -1,15 +1,17 @@
-// src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import BackendDashboard from "./pages/BackendDashboard";
 import AuthGoogle from "./pages/AuthGoogle";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
+
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoutes";
 
@@ -25,9 +27,9 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* Login page stays at /auth/google as you already have */}
               <Route path="/auth/google" element={<AuthGoogle />} />
-              {/* Protect dashboard */}
+
+              {/* user dashboard (protected) */}
               <Route
                 path="/dashboard"
                 element={
@@ -36,6 +38,17 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+
+              {/* backend dashboard (protected) */}
+              <Route
+                path="/backend"
+                element={
+                  <ProtectedRoute>
+                    <BackendDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="/pricing" element={<Pricing />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

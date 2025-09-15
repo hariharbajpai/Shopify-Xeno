@@ -1,4 +1,3 @@
-// components/FunnelBars.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { blob } from "@/data/tenatBlob";

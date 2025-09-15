@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type User = { sub: string; email?: string; name?: string; picture?: string };
@@ -12,7 +11,6 @@ type Ctx = {
 const AuthCtx = createContext<Ctx | null>(null);
 export const useAuth = () => useContext(AuthCtx)!;
 
-// Decode JWT payload without verifying signature (demo only)
 function decodeJwt<T = any>(jwt: string): T | null {
   try {
     const [, payload] = jwt.split(".");

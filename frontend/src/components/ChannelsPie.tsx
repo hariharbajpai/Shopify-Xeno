@@ -1,4 +1,3 @@
-// components/ChannelsPie.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { blob } from "@/data/tenatBlob";

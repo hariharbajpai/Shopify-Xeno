@@ -132,11 +132,11 @@ const DetailedFeatures = () => {
             
             <div className="bg-background border border-border rounded-lg p-6">
               <blockquote className="text-sm text-foreground mb-3">
-                "It's a game changer to validate hypotheses across many buyer segments in seconds. We still review key findings manually, but Xenoit saves hours every week."
+                "We connected multiple dev stores and got clean, evidence-backed insights in minutes—LTV, cohorts, and top SKUs—without building a pipeline."
               </blockquote>
               <div className="text-xs text-muted-foreground">
-                <div className="font-semibold text-foreground">Cecilie Smestad</div>
-                E-commerce Consultant
+                <div className="font-semibold text-foreground">Harihar Bajpai</div>
+                
               </div>
             </div>
           </div>

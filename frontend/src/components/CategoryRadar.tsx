@@ -1,4 +1,3 @@
-// components/CategoryRadar.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { blob } from "@/data/tenatBlob";

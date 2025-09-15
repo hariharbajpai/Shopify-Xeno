@@ -1,4 +1,3 @@
-// components/KpiRow.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmtIN, fmtINRC } from "@/lib/format";
 import { blob } from "@/data/tenatBlob";
