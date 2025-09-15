@@ -78,7 +78,7 @@ This backend service handles:
 ---
 
 ## 2) Architecture
-
+<image src="archeticture.png" alt="Xenoit Architecture">
 ### System Architecture
 
 ### Components and Responsibilities
