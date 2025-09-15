@@ -121,7 +121,7 @@ export default function BackendDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // KPIs + Inventory
+ 
   const [kpis, setKpis] = useState(() =>
     ({
       totals: { customers: 0, orders: 0, products: 0, lineItems: 0, liveVariants: 0 },
@@ -132,7 +132,7 @@ export default function BackendDashboard() {
   );
   const [inventory, setInventory] = useState({ products: 0, lineItems: 0, unitsSoldTop10: 0 });
 
-  // charts + tables
+ 
   const [timeSeries, setTimeSeries] = useState<Array<{ dateFormatted: string; revenueInCrores: number; ordersInK: number }>>([]);
   const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; percentage?: string }>>([]);
   const [recent, setRecent] = useState<RecentOrder[]>([]);
@@ -157,10 +157,9 @@ export default function BackendDashboard() {
       getTopCustomers(5),
       getDataSummary()
     ]);
-
-    // ---- KPIs from /insights/summary
+ 
     let summaryKpis = mapSummaryToKpis((summaryRes.status === 'fulfilled' ? summaryRes.value : undefined) as Summary);
-    // fill inventory counts from /api/data-summary (products, lineItems)
+   
     if (dataSummaryRes.status === 'fulfilled') {
       const counts = dataSummaryRes.value.counts || {};
       summaryKpis = {
@@ -174,23 +173,21 @@ export default function BackendDashboard() {
     }
     setKpis(summaryKpis);
 
-    // ---- Time series
+    
     if (seriesRes.status === 'fulfilled') {
       const ts = mapOrdersToTimeSeries({ data: seriesRes.value });
       setTimeSeries(ts.map(x => ({ dateFormatted: x.dateFormatted, revenueInCrores: x.revenueInCrores, ordersInK: x.ordersInK })));
-      // derive last-24h from last point
       const last = ts[ts.length - 1];
       setKpis(prev => ({
         ...prev,
         last24h: {
           revenue: Math.round((last?.revenue ?? 0)),
           orders: Math.round((last?.orders ?? 0)),
-          newCustomers: prev.last24h.newCustomers // keep 0 unless you get a metric
+          newCustomers: prev.last24h.newCustomers  
         }
       }));
     }
-
-    // ---- Top products → category pie + table
+ 
     if (topProductsRes.status === 'fulfilled') {
       const p = topProductsRes.value || [];
       setTopProducts(p.map(t => ({ title: t.title, revenue: t.revenue, quantity: t.quantity, orders: t.orders })));
@@ -204,15 +201,14 @@ export default function BackendDashboard() {
         unitsSoldTop10
       }));
     }
-
-    // ---- Recent orders table
+ 
     if (recentRes.status === 'fulfilled') {
       setRecent(recentRes.value);
     } else {
       setRecent([]);
     }
 
-    // ---- Top customers table
+     
     if (topCustomersRes.status === 'fulfilled') {
       const arr = topCustomersRes.value || [];
       setTopCustomers(arr.map(c => ({
@@ -222,7 +218,7 @@ export default function BackendDashboard() {
       })));
     }
 
-    // ---- Inventory counts from data-summary
+     
     if (dataSummaryRes.status === 'fulfilled') {
       const counts = dataSummaryRes.value.counts || {};
       setInventory(prev => ({
@@ -238,7 +234,7 @@ export default function BackendDashboard() {
       setLoading(true);
       try { await fetchAll(period); } finally { setLoading(false); }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, []);
 
   const handlePeriod = async (p: Period) => {
@@ -251,7 +247,7 @@ export default function BackendDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50" ref={pageRef}>
-      {/* Header */}
+      
       <div className="w-full px-8 py-6 bg-white shadow-sm border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -277,7 +273,7 @@ export default function BackendDashboard() {
         </div>
       </div>
 
-      {/* Content */}
+      
       <div className="w-full px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-black mb-2 flex items-center gap-2">
@@ -294,7 +290,7 @@ export default function BackendDashboard() {
           onExport={handleExport}
         />
 
-        {/* KPI Row */}
+       
         {loading ? (
           <div className="grid gap-6 md:grid-cols-4 mb-8">
             {[1,2,3,4].map(i => <ChartSkeleton key={i} height="h-40" />)}
